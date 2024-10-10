@@ -1,10 +1,10 @@
 # WhatsWpp-Analysis
 Short code to break down a few features and characteristics of your WhatsApp correspondence
 #### for immediate use of the WebApp enter: https://whatswpp-analysis.streamlit.app/ 
-
+###  
 
 ## Documentation for the WhatsApp Analysis Code
-
+###  
 
 ## README for webapp.py
 Project Title:
@@ -54,7 +54,7 @@ Analyze the results, which will be displayed as graphs and statistics in the bro
 
 ### License:
 This project is open-source and available under the [MIT License].
-
+###   
 
 
 ## README for whatsappanalysis.py
