@@ -1,1 +1,4 @@
 emoji
+matplotlib
+seaborn
+pandas
