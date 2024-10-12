@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import streamlit as st
+import zipfile
 
 
 st.set_page_config(
-        page_title="Whatsapp Analysis", layout="wide"
+        page_title="Whatsapp Analysis", page_icon="random"
 )
 
 
@@ -22,20 +23,22 @@ st.write("") # for space
 
 
 heb_text = """\n
-1- נתחיל עם להדגיש שכרגע הקוד רץ רק על שיחות שחולצו מאנדרואיד\n
+1- כרגע, הקוד רץ רק על שיחות שחולצו **מאנדרואיד**\n
 2- פתחו את אפליקציית הוואטסאפ וכנסו לשיחה המעניינת אתכם\n
 3- לחצו על שלוש הנקודות שמצד שמאל למעלה\n
 4- בחרו עוד -> יצוא הצאט -> ללא מדיה\n
 5- שלחו לעצמכם את הקובץ בצורה הנוחה לכם, והעלו אותו למיקום המתאים כאן\n
-6- זכרו להוריד את קובץ הניתוח ולשתף עם החבורה או המשפחה, רק אם בא לכם כמובן """
+6- זכרו להוריד את הניתוח המלא ולשתף עם החבורה או המשפחה, רק אם בא לכם כמובן\n
+7- להורדה: שלוש נקודת בצד ימין למעלה -> הדפסה"""
 
 eng_text = """\n
-1- Let's start by emphasizing that currently the code only runs on conversations extracted from Android\n
+1- Currently the code only runs on conversations extracted from **Android**\n
 2- Open the WhatsApp application and enter the conversation that interests you\n
 3- Click on the three dots on the top left\n
 4- Choose More -> Export Chat -> No Media\n
-5- Send yourself the file in a way that is convenient for you, and upload it to the intended location here\n
-6- Remember to download the analysis file and share with the group or family, only if you feel like it of course """
+5- Send yourself the file in the convenient way for you, and upload it to the intended location here\n
+6- Remember to download the full analysis and share with the group or family, only if you feel like it of course\n
+7- To download: three dots on the upper right -> print """
 
 col1, col2 = st.columns(2, gap="large", vertical_alignment="top")
 
@@ -48,9 +51,8 @@ with col2:
     st.write(heb_text)
     
 
+st.write("") # for space
 
-
-upl = st.file_uploader("Upload your text file", type="txt")
 
 def extract_date_and_time(line):
     # Define a regex pattern to match date and time at the beginning of the line
@@ -198,16 +200,39 @@ def create_emoji_chart(emoji_count):
             st.write(emoji_df)
 
 
+
+# File uploader to accept both text and zip files
+upl = st.file_uploader("**Upload your text or zip file**", type=["txt", "zip"])
+
+# Process the file
 if upl:
-    # Read the file
-    file = upl.read().decode("utf-8")
+    if upl.name.endswith(".txt"):
+        # If a text file is uploaded
+        file = upl.read().decode("utf-8")
+    elif upl.name.endswith(".zip"):
+        # If a zip file is uploaded
+        with zipfile.ZipFile(upl, 'r') as zip_ref:
+            # Extract all files from the zip
+            for file_info in zip_ref.infolist():
+                if file_info.filename.endswith(".txt"):
+                    # Only process the .txt file
+                    with zip_ref.open(file_info) as txt_file:
+                        file = txt_file.read().decode("utf-8")
+                    break
+
+    
     # Enter the values
     user_lines_dict, year_count_dict, hour_count_dict, message_count_dict, media_count_dict, emoji_count_dict, emoji_use_dict, general_emoji_count = process_lines(file)
 
 
     ## Run and print results
 
+
+    st.header("") # for space
+
+
     # Print the year count dictionary
+    st.markdown("<h4 style='text-align: right; color: gray;'>:מספר ההודעות שנשלחו בכל שנה</h4>", unsafe_allow_html=True)
     create_chart_int_years((year_count_dict, "Year", "message_count","Message Count Per Year"))
 
     with st.expander('The number of messages each year'):
@@ -220,6 +245,7 @@ if upl:
     
      
     # Print the hour count dictionary
+    st.markdown("<h4 style='text-align: right; color: gray;'>:מספר ההודעות שנשלחו בכל שעה</h4>", unsafe_allow_html=True)
     create_chart_int_hours((hour_count_dict, "Hour", "message_count","Message Count Per Hour"))
     
     with st.expander('The number of messages each hour'):
@@ -232,35 +258,38 @@ if upl:
     
 
     # Print the massage count dictionary
+    st.markdown("<h4 style='text-align: right; color: gray;'>:מספר ההודעות ששלח כל משתמש</h4>", unsafe_allow_html=True)
     create_chart_name((message_count_dict, "", "message_count", "Message usage"))
 
     with st.expander('The number of messages per user'):
         st.write("\n")
-        for user, message_count in sorted(message_count_dict.items()):
+        for user, message_count in sorted(message_count_dict.items(), key=lambda x:x[1], reverse=True):
             st.markdown(f"**{user}**: {message_count} messages")
 
 
     st.header("") # for space
 
 
-    # Print the massage count dictionary
+    # Print the media count dictionary
+    st.markdown("<h4 style='text-align: right; color: gray;'>:מספר הודעות המדיה ששלח כל משתמש</h4>", unsafe_allow_html=True)
     create_chart_name((media_count_dict, "", "media_count", "Media usage"))
 
     with st.expander('The number of media messages per user'):
         st.write("\n")
-        for user, media_count in sorted(media_count_dict.items()):
+        for user, media_count in sorted(media_count_dict.items(), key=lambda x:x[1], reverse=True):
             st.markdown(f"**{user}**: {media_count} media items")
 
 
     st.header("") # for space
 
 
-# Print emoji count and most used emoji for each user
+    # Print emoji count and most used emoji for each user
+    st.markdown("<h4 style='text-align: right; color: gray;'>:מספר האימוג'ים ששלח כל משתמש</h4>", unsafe_allow_html=True)
     create_chart_name((emoji_count_dict, "", "emoji_count", 'Emoji Usage'))
 
     with st.expander('Emoji count and most used emoji per user'):
         st.write("\n")
-        for user, emoji_count in emoji_count_dict.items():
+        for user, emoji_count in sorted(emoji_count_dict.items(), key=lambda x:x[1], reverse=True):
             st.markdown(f"**{user}**: {emoji_count} emojis")
             most_used_emoji = mode(emoji_use_dict[user])
             st.write(f"Most used emoji: {most_used_emoji}")
@@ -279,14 +308,16 @@ if upl:
 
 
     # Print word count and most used word for each user
+    st.markdown("<h4 style='text-align: right; color: gray;'>:מידע כללי נוסף</h4>", unsafe_allow_html=True)
     st.subheader("\nWord Count, Most Used Word, and Average Words per Message:")
     with st.expander('More details'):
         st.write("\n")
-        for user, lines in user_lines_dict.items():
-            st.markdown(f"**{user}**: {len(lines)} words")
-            average = round((len(lines))/message_count_dict[user], 2)
+        new_user_lines_dict= {key: len(value) for key, value in user_lines_dict.items()}
+        for user, len_lines in sorted(new_user_lines_dict.items(), key=lambda x:x[1], reverse=True):
+            st.markdown(f"**{user}**: {len_lines} words")
+            average = round((len_lines)/message_count_dict[user], 2)
             st.write(f"Average Words per Message: {average}")
-            most_used_word = mode(lines)
+            most_used_word = mode(user_lines_dict[user])
             st.write(f"Most used word: {most_used_word}")
             st.divider()  # Draws a horizontal rule
 
