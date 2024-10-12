@@ -2,4 +2,3 @@ emoji
 matplotlib
 seaborn
 pandas
-zipfile
